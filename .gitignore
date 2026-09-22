@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+*.xlsx
+!modelo-performance-analistas.xlsx
+.streamlit/secrets.toml
