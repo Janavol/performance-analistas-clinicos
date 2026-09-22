@@ -57,15 +57,18 @@ h1, h2, h3 { color:#1E1B15; font-family:'Fraunces', Georgia, serif; margin:0; }
 .tile-mini { background:#F0ECE1; border:1px solid #DFD8C8; border-radius:9px; padding:9px 11px; flex:1 1 120px; min-width:120px; box-sizing:border-box; }
 .tile-mini .tm-label { font-size:10px; color:#726B58; text-transform:uppercase; letter-spacing:.05em; font-weight:600; margin-bottom:3px; }
 .tile-mini .tm-value { font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:600; color:#1E1B15; }
-/* display:table em vez de flex: dá largura definida e confiável às células
-   (o WeasyPrint não resolve bem % / max-width dentro de flex-children sem
-   largura explícita — imagens e texto transbordavam a coluna). */
-.analyst-charts { display:table; width:100%; table-layout:fixed; border-spacing:16px 0; margin-bottom:18px; }
+/* float + width% + box-sizing:border-box em vez de flex OU table: essa é a
+   combinação mais previsível entre motores CSS para largura percentual
+   definida. flex sem largura explícita e display:table com border-spacing
+   os dois transbordavam a coluna no WeasyPrint (a imagem do radar passava
+   da borda do cartão). */
+.analyst-charts { width:100%; margin-bottom:18px; }
+.analyst-charts::after { content:""; display:block; clear:both; }
 .analyst-chart-col {
-    display:table-cell; width:50%;
+    float:left; width:48%; box-sizing:border-box;
     border:1px solid #DFD8C8; border-radius:10px; padding:14px; background:#F0ECE1;
-    vertical-align:top; box-sizing:border-box;
 }
+.analyst-chart-col:first-child { margin-right:4%; }
 .analyst-chart-col .chart-label { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#726B58; font-weight:600; margin-bottom:10px; }
 .analyst-chart-col img { max-width:100%; height:auto; display:block; margin:0 auto; }
 .radar-grid { display:flex; flex-wrap:wrap; gap:14px; }

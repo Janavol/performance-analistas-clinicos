@@ -32,9 +32,8 @@ def render():
     st.markdown("# Análise por Temporalidade")
     st.markdown(
         '<p class="lede">Envie os arquivos Excel exportados na aba "Análise atual" '
-        '(botão "Baixar Excel da análise") — um por período, por exemplo um por mês — '
-        "para comparar a evolução do score da equipe e de cada analista ao longo do tempo. "
-        "Essa análise é independente da aba principal.</p>",
+        '(botão "Baixar Excel da análise") para comparar a evolução do score da equipe '
+        "e de cada analista ao longo do tempo.</p>",
         unsafe_allow_html=True,
     )
 

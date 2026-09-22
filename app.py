@@ -58,7 +58,7 @@ st.markdown(
     div[data-testid="stImage"] { display:flex; justify-content:center; }
     .radar-card, .trend-card { margin-bottom:8px; }
     .insight-box { align-self:stretch; }
-    @media (max-width: 640px) { .analyst-charts { flex-direction:column; } }
+    @media (max-width: 640px) { .analyst-chart-col { float:none; width:100%; margin-right:0; margin-bottom:12px; } }
     </style>
     """,
     unsafe_allow_html=True,

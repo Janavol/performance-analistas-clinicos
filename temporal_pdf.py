@@ -63,6 +63,10 @@ def build_pdf(result: dict) -> bytes:
         components.tile_html("Variação da equipe", delta_txt(result["team_delta"])),
         components.tile_html("Analistas comparados", len(result["analysts"])),
     ]
+    team_png = charts.trend_line_png(
+        periods, [{"label": "Equipe", "values": team_df["Score Final"].tolist(), "color": charts.COLORS["accent"]}],
+        width=11, height=3.0, show_legend=False,
+    )
     pages.append(
         '<div class="eyebrow">Comparativo entre períodos</div>'
         "<h1>Análise por Temporalidade</h1>"
@@ -71,16 +75,8 @@ def build_pdf(result: dict) -> bytes:
         f"{components.tiles_row_html(tiles)}"
         f'<div class="insight-box" style="margin-top:14px;"><div class="insight-title">Insight</div>'
         f"<p>{te.build_temporal_insight(result)}</p></div>"
-    )
-
-    # ---- página 2: evolução da equipe ----
-    team_png = charts.trend_line_png(
-        periods, [{"label": "Equipe", "values": team_df["Score Final"].tolist(), "color": charts.COLORS["accent"]}],
-        width=11, height=3.6, show_legend=False,
-    )
-    pages.append(
-        "<h2>Evolução do score da equipe</h2>"
-        f'<img src="data:image/png;base64,{components.img_b64(team_png)}" style="width:100%;height:auto;margin-top:10px;">'
+        '<h2 style="margin-top:16px;">Evolução do score da equipe</h2>'
+        f'<img src="data:image/png;base64,{components.img_b64(team_png)}" style="width:100%;height:auto;margin-top:6px;">'
     )
 
     # ---- página 3: evolução por bloco ----
