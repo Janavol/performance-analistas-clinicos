@@ -11,21 +11,38 @@ do Claude só funciona para quem tem acesso de edição na mesma organização).
 
 ## Rodando localmente
 
+O PDF é gerado com [WeasyPrint](https://weasyprint.org/), que depende de bibliotecas
+nativas (Pango/Cairo/GDK-Pixbuf) além do pacote Python.
+
 ```bash
+# macOS
+brew install pango gdk-pixbuf cairo
+
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-streamlit run app.py
+
+# no macOS o WeasyPrint às vezes não acha as libs do Homebrew automaticamente:
+DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib streamlit run app.py
 ```
+
+No Streamlit Community Cloud isso é resolvido automaticamente pelo `packages.txt`
+deste repositório (instala as libs via `apt`), sem precisar de nenhuma variável de
+ambiente.
 
 ## Estrutura
 
 - `app.py` — interface Streamlit (layout, upload, configuração, filtro de analistas, downloads).
+- `components.py` — HTML/CSS compartilhado entre a tela e o PDF: os mesmos cartões,
+  fontes (Fraunces/IBM Plex Mono) e cores em um só lugar, para que o relatório em PDF
+  seja de fato uma réplica fiel da página — não uma reimplementação aproximada.
 - `engine.py` — motor de cálculo (réplica da lógica da planilha de referência: TAT, notificação, scores por bloco, score final ponderado, classificação).
 - `insights.py` — geração de insight automático por analista, comparado à equipe.
 - `charts.py` — gráficos (barras e radar) em matplotlib, usados na tela e no PDF.
 - `excel_export.py` — geração do `.xlsx` de resultado e do modelo de planilha para preenchimento.
-- `pdf_report.py` — geração do relatório em PDF (reportlab), com uma página por analista.
+- `pdf_report.py` — monta o HTML do relatório (reaproveitando `components.py`) e renderiza
+  em PDF paisagem via WeasyPrint, uma seção por página (cabeçalho, gráfico de barras,
+  radares, uma página por analista, tabela de detalhamento).
 
 ## Formato da planilha de entrada
 

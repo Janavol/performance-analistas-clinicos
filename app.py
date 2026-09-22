@@ -15,21 +15,30 @@ import pandas as pd
 import streamlit as st
 
 import charts
+import components
 import engine
 import excel_export
 import pdf_report
+from components import (
+    CLASS_CSS,
+    analyst_card_html,
+    pill_html,
+    radar_card_html,
+    tile_html,
+    tiles_row_html,
+)
 from insights import build_insight
 
 st.set_page_config(page_title="Performance Analistas Clínicos", layout="wide", page_icon="📊")
 
 # ---------------------------------------------------------------------------
-# Estilos — replica as fontes e os cartões do artifact original
+# Estilos — components.BASE_CSS é a mesma folha de estilo usada no PDF
+# (via WeasyPrint); aqui só somam-se os seletores específicos do Streamlit.
 # ---------------------------------------------------------------------------
 st.markdown(
-    """
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    components.FONT_LINKS
+    + f"<style>{components.BASE_CSS}</style>"
+    + """
     <style>
     .stApp { background-color: #F6F4EE; }
     h1, h2, h3,
@@ -41,149 +50,14 @@ st.markdown(
         font-family: 'Fraunces', Georgia, serif !important;
     }
     [data-testid="stMarkdownContainer"] h1 { font-weight: 600 !important; }
-    .eyebrow { font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:#0B6E5C; font-weight:600; margin-bottom:2px; }
-    .lede { color: #726B58; font-size: 15px; max-width: 76ch; }
-    .pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; font-family:'IBM Plex Mono', monospace; }
-    .pill-Excelente { background:#E3F5EA; color:#0CA30C; }
-    .pill-Bom { background:#FBF0DE; color:#B4790A; }
-    .pill-Regular { background:#FBE6DC; color:#C1552C; }
-    .pill-Crítico { background:#FAE7E3; color:#D03B3B; }
-    .insight-box { background:#E3F1EC; border-left:3px solid #0B6E5C; border-radius:0 10px 10px 0; padding:12px 16px; margin-top:8px; width:100%; box-sizing:border-box; align-self:stretch; }
-    .insight-title { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#0B6E5C; font-weight:700; margin-bottom:4px; }
-    .radar-card { background:#F0ECE1; border:1px solid #DFD8C8; border-radius:12px; padding:10px 8px 12px; text-align:center; margin-bottom:8px; }
-    .radar-card-header { display:flex; align-items:baseline; justify-content:center; gap:6px; font-size:12.5px; font-weight:700; color:#1E1B15; margin-bottom:2px; }
-    .radar-card-score { font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:600; color:#726B58; }
-    .radar-card img { display:block; margin:0 auto; }
     div[data-testid="stImage"] { display:flex; justify-content:center; }
-    .tiles-row { display:flex; flex-wrap:wrap; gap:12px; margin:14px 0 22px; }
-    .tile {
-        background:#FFFFFF; border:1px solid #DFD8C8; border-radius:12px; padding:16px;
-        flex:1 1 150px; min-width:150px;
-        box-shadow: 0 1px 2px rgba(30,27,21,0.06), 0 8px 24px -12px rgba(30,27,21,0.18);
-    }
-    .tile .t-label { font-size:11.5px; color:#726B58; text-transform:uppercase; letter-spacing:.06em; font-weight:600; margin-bottom:6px; }
-    .tile .t-value { font-family:'Fraunces', serif; font-size:28px; font-weight:600; color:#1E1B15; font-variant-numeric: tabular-nums; line-height:1.2; }
-    .tile .t-sub { margin-top:6px; }
-    .section-caption { color:#726B58; font-size:13px; margin:4px 0 10px; }
-    .insight-box p { margin:0; font-size:13px; line-height:1.55; color:#1E1B15; }
-    .analyst-card {
-        background:#FFFFFF; border:1px solid #DFD8C8; border-radius:14px; padding:20px;
-        box-shadow: 0 1px 2px rgba(30,27,21,0.06), 0 8px 24px -12px rgba(30,27,21,0.18);
-    }
-    .analyst-header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
-    .analyst-header h3 { font-family:'Fraunces', serif !important; font-size:19px; font-weight:600; margin:0; color:#1E1B15; }
-    .analyst-header .analyst-score { font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:600; color:#726B58; display:flex; align-items:center; gap:8px; }
-    .tiles-mini { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin-bottom:18px; }
-    .tile-mini { background:#F0ECE1; border:1px solid #DFD8C8; border-radius:9px; padding:9px 11px; }
-    .tile-mini .tm-label { font-size:10px; color:#726B58; text-transform:uppercase; letter-spacing:.05em; font-weight:600; margin-bottom:3px; }
-    .tile-mini .tm-value { font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:600; color:#1E1B15; }
-    .analyst-charts { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
-    .analyst-chart-col {
-        border:1px solid #DFD8C8; border-radius:10px; padding:14px; background:#F0ECE1;
-        display:flex; flex-direction:column; align-items:center;
-    }
-    .analyst-chart-col .chart-label { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#726B58; font-weight:600; margin-bottom:10px; align-self:flex-start; }
-    .analyst-chart-col img { max-width:100%; height:auto; display:block; margin:0 auto; }
-    @media (max-width: 640px) { .analyst-charts { grid-template-columns:1fr; } }
+    .radar-card { margin-bottom:8px; }
+    .insight-box { align-self:stretch; }
+    @media (max-width: 640px) { .analyst-charts { flex-direction:column; } }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
-CLASS_CSS = {"Excelente": "pill-Excelente", "Bom": "pill-Bom", "Regular": "pill-Regular", "Crítico": "pill-Crítico"}
-
-
-def pill_html(classe: str | None) -> str:
-    if not classe:
-        return ""
-    return f'<span class="pill {CLASS_CSS.get(classe, "")}">{classe}</span>'
-
-
-def tile_html(label: str, value, sub: str = "") -> str:
-    sub_html = f'<div class="t-sub">{sub}</div>' if sub else ""
-    return f'<div class="tile"><div class="t-label">{label}</div><div class="t-value">{value}</div>{sub_html}</div>'
-
-
-def tiles_row_html(tiles: list[str]) -> str:
-    return '<div class="tiles-row">' + "".join(tiles) + "</div>"
-
-
-def _img_b64(png_bytes: bytes) -> str:
-    import base64
-
-    return base64.b64encode(png_bytes).decode("ascii")
-
-
-def radar_card_html(item: dict) -> str:
-    """Cartão de radar auto-contido (cabeçalho + imagem base64 + pill) num único bloco HTML,
-    para que a borda do cartão realmente envolva a imagem (st.markdown + st.image separados
-    não se aninham como elementos-pai/filho no DOM do Streamlit)."""
-    png = charts.radar_chart_png(item["scores"], item["classe"], size=1.9)
-    b64 = _img_b64(png)
-    score_txt = f"{item['score_final']:.1f}" if item.get("score_final") is not None else "—"
-    pill = pill_html(item["classe"]) if item.get("classe") else '<span style="font-size:11px;color:#9a9282;">sem dados</span>'
-    return (
-        '<div class="radar-card">'
-        f'<div class="radar-card-header"><span>{item["name"]}</span><span class="radar-card-score">{score_txt}</span></div>'
-        f'<img src="data:image/png;base64,{b64}" style="width:100%;max-width:170px;height:auto;display:block;margin:0 auto;">'
-        f'<div style="margin-top:6px;">{pill}</div>'
-        "</div>"
-    )
-
-
-def analyst_card_html(a: dict, t: dict) -> str:
-    """Cartão completo de análise por analista — cabeçalho, mini-tiles, dois
-    gráficos comparativos e o insight, tudo num único bloco HTML (mesma razão
-    do radar_card_html: nesting real só funciona dentro de um markdown só)."""
-
-    def pct(v):
-        return f"{v*100:.1f}%" if v is not None else "—"
-
-    def sc(v):
-        return f"{v:.1f}" if v is not None else "—"
-
-    stats = [
-        ("RC Total", str(a["rc_total"])),
-        ("RC Notificados", pct(a["rc_notif_pct"])),
-        ("RC no Prazo", pct(a["rc_prazo_pct"])),
-        ("PA no Prazo", pct(a["pa"]["pct"])),
-        ("UI no Prazo", pct(a["ui"]["pct"])),
-        ("UTI no Prazo", pct(a["uti"]["pct"])),
-        ("Sc. Protocolos", sc(a["score_protocolos"])),
-        ("Score Final", sc(a["score_final"])),
-    ]
-    mini_tiles = "".join(
-        f'<div class="tile-mini"><div class="tm-label">{label}</div><div class="tm-value">{value}</div></div>'
-        for label, value in stats
-    )
-
-    bar_png = charts.bar_chart_png(
-        [
-            {"label": "Equipe", "value": t["score_final"], "classe": t["classe"]},
-            {"label": a["analista"], "value": a["score_final"], "classe": a["classe"]},
-        ],
-        width=4.6, height=1.7,
-    )
-    radar_png = charts.radar_compare_png(a, a["classe"], t, size=2.7)
-    score_txt = sc(a["score_final"])
-    pill = pill_html(a["classe"])
-    insight = build_insight(a, t)
-
-    return (
-        '<div class="analyst-card">'
-        f'<div class="analyst-header"><h3>{a["analista"]}</h3>'
-        f'<span class="analyst-score">{score_txt} {pill}</span></div>'
-        f'<div class="tiles-mini">{mini_tiles}</div>'
-        '<div class="analyst-charts">'
-        f'<div class="analyst-chart-col"><div class="chart-label">Score final vs. Equipe</div>'
-        f'<img src="data:image/png;base64,{_img_b64(bar_png)}">'
-        f'<div class="insight-box"><div class="insight-title">Insight</div><p>{insight}</p></div>'
-        "</div>"
-        f'<div class="analyst-chart-col"><div class="chart-label">Perfil por bloco vs. Equipe</div>'
-        f'<img src="data:image/png;base64,{_img_b64(radar_png)}"></div>'
-        "</div>"
-        "</div>"
-    )
 
 
 # ---------------------------------------------------------------------------
