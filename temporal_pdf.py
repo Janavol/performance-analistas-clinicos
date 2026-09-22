@@ -13,10 +13,13 @@ import components
 import temporal_engine as te
 
 PAGE_CSS = """
-@page { size: A4 landscape; margin: 14mm; }
-html, body { margin:0; padding:0; }
-.pdf-page { page-break-after: always; }
+@page { size: A4 landscape; margin: 0; }
+html, body { margin:0; padding:0; background:#F6F4EE; }
+.pdf-page { page-break-after: always; padding: 14mm; box-sizing: border-box; }
 .pdf-page:last-child { page-break-after: auto; }
+/* No PDF a sombra do CSS da web fica pesada (renderização diferente do
+   navegador) — cartões se distinguem só pela borda, sem sombra. */
+.tile, .analyst-card, .radar-card, .trend-card { box-shadow: none; }
 .pdf-meta { color:#726B58; font-size:12px; margin:2px 0 10px; }
 .pdf-table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:9px; }
 .pdf-table th {
