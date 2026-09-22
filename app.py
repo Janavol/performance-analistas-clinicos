@@ -23,15 +23,20 @@ from insights import build_insight
 st.set_page_config(page_title="Performance Analistas Clínicos", layout="wide", page_icon="📊")
 
 # ---------------------------------------------------------------------------
-# Estilos
+# Estilos — replica as fontes e os cartões do artifact original
 # ---------------------------------------------------------------------------
 st.markdown(
     """
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
     .stApp { background-color: #F6F4EE; }
-    h1, h2, h3 { color: #1E1B15; }
+    h1, h2, h3 { color: #1E1B15; font-family: 'Fraunces', Georgia, serif; }
+    h1 { font-weight: 600; }
+    .eyebrow { font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:#0B6E5C; font-weight:600; margin-bottom:2px; }
     .lede { color: #726B58; font-size: 15px; max-width: 76ch; }
-    .pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+    .pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; font-family:'IBM Plex Mono', monospace; }
     .pill-Excelente { background:#E3F5EA; color:#0CA30C; }
     .pill-Bom { background:#FBF0DE; color:#B4790A; }
     .pill-Regular { background:#FBE6DC; color:#C1552C; }
@@ -40,9 +45,19 @@ st.markdown(
     .insight-title { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#0B6E5C; font-weight:700; margin-bottom:4px; }
     .radar-card { background:#F0ECE1; border:1px solid #DFD8C8; border-radius:12px; padding:10px 8px 12px; text-align:center; margin-bottom:8px; }
     .radar-card-header { display:flex; align-items:baseline; justify-content:center; gap:6px; font-size:12.5px; font-weight:700; color:#1E1B15; margin-bottom:2px; }
-    .radar-card-score { font-family:monospace; font-size:11.5px; font-weight:600; color:#726B58; }
+    .radar-card-score { font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:600; color:#726B58; }
     .radar-card img { display:block; margin:0 auto; }
     div[data-testid="stImage"] { display:flex; justify-content:center; }
+    .tiles-row { display:flex; flex-wrap:wrap; gap:12px; margin:14px 0 22px; }
+    .tile {
+        background:#FFFFFF; border:1px solid #DFD8C8; border-radius:12px; padding:16px;
+        flex:1 1 150px; min-width:150px;
+        box-shadow: 0 1px 2px rgba(30,27,21,0.06), 0 8px 24px -12px rgba(30,27,21,0.18);
+    }
+    .tile .t-label { font-size:11.5px; color:#726B58; text-transform:uppercase; letter-spacing:.06em; font-weight:600; margin-bottom:6px; }
+    .tile .t-value { font-family:'Fraunces', serif; font-size:28px; font-weight:600; color:#1E1B15; font-variant-numeric: tabular-nums; line-height:1.2; }
+    .tile .t-sub { margin-top:6px; }
+    .section-caption { color:#726B58; font-size:13px; margin:4px 0 10px; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -55,6 +70,15 @@ def pill_html(classe: str | None) -> str:
     if not classe:
         return ""
     return f'<span class="pill {CLASS_CSS.get(classe, "")}">{classe}</span>'
+
+
+def tile_html(label: str, value, sub: str = "") -> str:
+    sub_html = f'<div class="t-sub">{sub}</div>' if sub else ""
+    return f'<div class="tile"><div class="t-label">{label}</div><div class="t-value">{value}</div>{sub_html}</div>'
+
+
+def tiles_row_html(tiles: list[str]) -> str:
+    return '<div class="tiles-row">' + "".join(tiles) + "</div>"
 
 
 def _img_b64(png_bytes: bytes) -> str:
@@ -149,7 +173,7 @@ source_df = raw_df if raw_df is not None else (build_example_df() if show_exampl
 # ---------------------------------------------------------------------------
 # Cabeçalho
 # ---------------------------------------------------------------------------
-st.markdown('<div style="font-family:monospace;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:#0B6E5C;font-weight:700;">Análise automática de performance</div>', unsafe_allow_html=True)
+st.markdown('<div class="eyebrow">Análise automática de performance</div>', unsafe_allow_html=True)
 st.markdown("# Performance Analistas Clínicos")
 st.markdown(
     '<p class="lede">Calcula <b>notificação de resultados críticos</b>, <b>cumprimento de TAT</b> por protocolo '
@@ -191,24 +215,34 @@ else:
 
         t = result["team"]
 
-        # ---- tiles ----
-        cols = st.columns(6)
-        cols[0].metric("Score final da equipe", f"{t['score_final']:.1f}" if t["score_final"] is not None else "—")
-        cols[0].markdown(pill_html(t["classe"]), unsafe_allow_html=True)
-        cols[1].metric("Resultados críticos", t["rc_total"])
-        cols[2].metric("Críticos notificados", f"{t['rc_notif_pct']*100:.1f}%" if t["rc_notif_pct"] is not None else "—")
-        cols[3].metric("Notificados no prazo", f"{t['rc_prazo_pct']*100:.1f}%" if t["rc_prazo_pct"] is not None else "—")
-        cols[4].metric("PA no prazo", f"{t['pa']['pct']*100:.1f}%" if t["pa"]["pct"] is not None else "—")
-        cols[5].metric("UI no prazo", f"{t['ui']['pct']*100:.1f}%" if t["ui"]["pct"] is not None else "—")
+        # ---- tiles (mesmo cartão/fonte do artifact) ----
+        def pct(v):
+            return f"{v*100:.1f}%" if v is not None else "—"
 
-        # ---- block score tiles ----
-        st.caption("Score por bloco (equipe)")
-        bcols = st.columns(5)
-        bcols[0].metric("Score Críticos", f"{t['score_criticos']:.1f}" if t["score_criticos"] is not None else "—")
-        bcols[1].metric("Score Protocolos", f"{t['score_protocolos']:.1f}" if t["score_protocolos"] is not None else "—")
-        bcols[2].metric("Score PA", f"{t['score_pa']:.1f}" if t["score_pa"] is not None else "—")
-        bcols[3].metric("Score UI", f"{t['score_ui']:.1f}" if t["score_ui"] is not None else "—")
-        bcols[4].metric("Score UTI Adulto", f"{t['score_uca']:.1f}" if t["score_uca"] is not None else "—")
+        def sc(v):
+            return f"{v:.1f}" if v is not None else "—"
+
+        main_tiles = [
+            tile_html("Score final da equipe", sc(t["score_final"]), pill_html(t["classe"])),
+            tile_html("Resultados críticos", t["rc_total"]),
+            tile_html("Críticos notificados", pct(t["rc_notif_pct"])),
+            tile_html("Notificados no prazo", pct(t["rc_prazo_pct"])),
+            tile_html("PA no prazo", pct(t["pa"]["pct"])),
+            tile_html("UI no prazo", pct(t["ui"]["pct"])),
+            tile_html("UTI no prazo", pct(t["uti"]["pct"])),
+        ]
+        st.markdown(tiles_row_html(main_tiles), unsafe_allow_html=True)
+
+        # ---- block score tiles (score por protocolo/bloco) ----
+        st.markdown('<div class="section-caption">Score por bloco (equipe)</div>', unsafe_allow_html=True)
+        block_tiles = [
+            tile_html("Score Críticos", sc(t["score_criticos"])),
+            tile_html("Score Protocolos", sc(t["score_protocolos"])),
+            tile_html("Score PA", sc(t["score_pa"])),
+            tile_html("Score UI", sc(t["score_ui"])),
+            tile_html("Score UTI Adulto", sc(t["score_uca"])),
+        ]
+        st.markdown(tiles_row_html(block_tiles), unsafe_allow_html=True)
 
         st.divider()
 

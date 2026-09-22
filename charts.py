@@ -46,7 +46,7 @@ def color_for_class(classe):
     return COLORS.get(CLASS_KEY.get(classe), COLORS["accent"])
 
 
-def _fig_to_png_bytes(fig, dpi=200) -> bytes:
+def _fig_to_png_bytes(fig, dpi=260) -> bytes:
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight", pad_inches=0.05, facecolor=COLORS["surface"])
     plt.close(fig)
@@ -85,7 +85,7 @@ def bar_chart_png(entries: list[dict], width=6.4, height=None) -> bytes:
         ax.spines[spine].set_visible(False)
     ax.spines["bottom"].set_color(COLORS["border"])
     fig.tight_layout()
-    return _fig_to_png_bytes(fig, dpi=180)
+    return _fig_to_png_bytes(fig, dpi=320)
 
 
 # ---------------------------------------------------------------------------
@@ -158,7 +158,7 @@ def radar_chart_png(scores: dict, classe, size=2.15, show_values=True) -> bytes:
     color = color_for_class(classe)
     _draw_radar_shape(ax, angles, scores, color, show_values=show_values, value_fontsize=7.3)
     fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-    return _fig_to_png_bytes(fig, dpi=200)
+    return _fig_to_png_bytes(fig, dpi=320)
 
 
 def radar_compare_png(scores_a: dict, classe_a, scores_b: dict, size=2.7) -> bytes:
@@ -182,7 +182,7 @@ def radar_compare_png(scores_a: dict, classe_a, scores_b: dict, size=2.7) -> byt
         fontsize=7.5, frameon=False, handlelength=1.6, columnspacing=1.2,
     )
     fig.subplots_adjust(left=0, right=1, top=1, bottom=0.1)
-    return _fig_to_png_bytes(fig, dpi=200)
+    return _fig_to_png_bytes(fig, dpi=320)
 
 
 def radar_grid_png(items: list[dict], cols=4, size_each=1.9) -> bytes:
@@ -204,4 +204,4 @@ def radar_grid_png(items: list[dict], cols=4, size_each=1.9) -> bytes:
     for j in range(n, len(axes_flat)):
         axes_flat[j].axis("off")
     fig.subplots_adjust(wspace=0.35, hspace=0.45, left=0.02, right=0.98, top=0.92, bottom=0.02)
-    return _fig_to_png_bytes(fig, dpi=190)
+    return _fig_to_png_bytes(fig, dpi=260)
