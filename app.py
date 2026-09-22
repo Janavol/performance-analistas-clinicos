@@ -48,7 +48,7 @@ st.markdown(
     .pill-Bom { background:#FBF0DE; color:#B4790A; }
     .pill-Regular { background:#FBE6DC; color:#C1552C; }
     .pill-Crítico { background:#FAE7E3; color:#D03B3B; }
-    .insight-box { background:#E3F1EC; border-left:3px solid #0B6E5C; border-radius:0 10px 10px 0; padding:12px 16px; margin-top:8px; }
+    .insight-box { background:#E3F1EC; border-left:3px solid #0B6E5C; border-radius:0 10px 10px 0; padding:12px 16px; margin-top:8px; width:100%; box-sizing:border-box; align-self:stretch; }
     .insight-title { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#0B6E5C; font-weight:700; margin-bottom:4px; }
     .radar-card { background:#F0ECE1; border:1px solid #DFD8C8; border-radius:12px; padding:10px 8px 12px; text-align:center; margin-bottom:8px; }
     .radar-card-header { display:flex; align-items:baseline; justify-content:center; gap:6px; font-size:12.5px; font-weight:700; color:#1E1B15; margin-bottom:2px; }
@@ -176,11 +176,12 @@ def analyst_card_html(a: dict, t: dict) -> str:
         f'<div class="tiles-mini">{mini_tiles}</div>'
         '<div class="analyst-charts">'
         f'<div class="analyst-chart-col"><div class="chart-label">Score final vs. Equipe</div>'
-        f'<img src="data:image/png;base64,{_img_b64(bar_png)}"></div>'
+        f'<img src="data:image/png;base64,{_img_b64(bar_png)}">'
+        f'<div class="insight-box"><div class="insight-title">Insight</div><p>{insight}</p></div>'
+        "</div>"
         f'<div class="analyst-chart-col"><div class="chart-label">Perfil por bloco vs. Equipe</div>'
         f'<img src="data:image/png;base64,{_img_b64(radar_png)}"></div>'
         "</div>"
-        f'<div class="insight-box"><div class="insight-title">Insight automático</div><p>{insight}</p></div>'
         "</div>"
     )
 
