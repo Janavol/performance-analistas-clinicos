@@ -70,6 +70,16 @@ h1, h2, h3 { color:#1E1B15; font-family:'Fraunces', Georgia, serif; margin:0; }
 .analyst-chart-col img { max-width:100%; height:auto; display:block; margin:0 auto; }
 .radar-grid { display:flex; flex-wrap:wrap; gap:14px; }
 .radar-grid > div { flex:1 1 170px; max-width:200px; box-sizing:border-box; }
+.trend-grid { display:flex; flex-wrap:wrap; gap:14px; }
+.trend-grid > div { flex:1 1 220px; max-width:250px; box-sizing:border-box; }
+.trend-card { background:#F0ECE1; border:1px solid #DFD8C8; border-radius:12px; padding:10px 10px 12px; text-align:center; }
+.trend-card-header { display:flex; align-items:baseline; justify-content:center; gap:6px; font-size:12.5px; font-weight:700; color:#1E1B15; margin-bottom:2px; }
+.trend-card-score { font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:600; color:#726B58; }
+.trend-delta { display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; margin-top:6px; }
+.trend-delta-up { background:#E3F5EA; color:#0CA30C; }
+.trend-delta-down { background:#FAE7E3; color:#D03B3B; }
+.trend-delta-flat { background:#F0ECE1; color:#726B58; border:1px solid #DFD8C8; }
+.trend-card img { display:block; margin:0 auto; }
 """
 
 CLASS_CSS = {"Excelente": "pill-Excelente", "Bom": "pill-Bom", "Regular": "pill-Regular", "Crítico": "pill-Crítico"}
@@ -110,6 +120,37 @@ def radar_card_html(item: dict, img_max_w: str = "170px") -> str:
 
 def radar_grid_html(items: list) -> str:
     return '<div class="radar-grid">' + "".join(radar_card_html(item) for item in items) + "</div>"
+
+
+def delta_badge_html(delta) -> str:
+    if delta is None:
+        return ""
+    if delta > 0.5:
+        cls, sign = "trend-delta-up", "+"
+    elif delta < -0.5:
+        cls, sign = "trend-delta-down", ""
+    else:
+        cls, sign = "trend-delta-flat", "±"
+    return f'<span class="trend-delta {cls}">{sign}{delta:.1f} pts</span>'
+
+
+def trend_card_html(a: dict, x_labels: list, img_max_w: str = "220px") -> str:
+    """a: item de temporal_engine.compute()["analysts"] — {analista, series, first, last, delta, classe_atual}."""
+    values = a["series"]["Score Final"].tolist()
+    png = charts.mini_trend_png(x_labels, values, classe=a.get("classe_atual"), width=2.6, height=1.7)
+    b64 = img_b64(png)
+    last_txt = f"{a['last']:.1f}" if a.get("last") is not None else "—"
+    return (
+        '<div class="trend-card">'
+        f'<div class="trend-card-header"><span>{a["analista"]}</span><span class="trend-card-score">{last_txt}</span></div>'
+        f'<img src="data:image/png;base64,{b64}" style="width:100%;max-width:{img_max_w};height:auto;">'
+        f"{delta_badge_html(a.get('delta'))}"
+        "</div>"
+    )
+
+
+def trend_grid_html(analysts: list, x_labels: list) -> str:
+    return '<div class="trend-grid">' + "".join(trend_card_html(a, x_labels) for a in analysts) + "</div>"
 
 
 def analyst_card_html(a: dict, t: dict) -> str:

@@ -206,3 +206,74 @@ def radar_grid_png(items: list[dict], cols=4, size_each=1.9) -> bytes:
         axes_flat[j].axis("off")
     fig.subplots_adjust(wspace=0.35, hspace=0.45, left=0.02, right=0.98, top=0.92, bottom=0.02)
     return _fig_to_png_bytes(fig, dpi=260)
+
+
+# ---------------------------------------------------------------------------
+# Linhas de tendência — análise por temporalidade
+# ---------------------------------------------------------------------------
+
+# Paleta categórica fixa (não é a paleta de status/classificação — aqui as
+# cores só distinguem séries num gráfico de linha, sem significado de severidade).
+TREND_PALETTE = ["#0B6E5C", "#B4790A", "#5B6EE1", "#C1552C", "#7A4FB5", "#2A8C8C"]
+
+
+def _setup_trend_axes(ax, x_labels):
+    n = len(x_labels)
+    ax.set_xlim(-0.4, n - 0.6)
+    ax.set_xticks(range(n))
+    ax.set_xticklabels(x_labels, fontsize=8.5, color=COLORS["text_muted"], rotation=0 if n <= 6 else 30, ha="right" if n > 6 else "center")
+    ax.set_ylim(0, 105)
+    ax.set_yticks([0, 25, 50, 75, 100])
+    ax.tick_params(axis="y", colors=COLORS["text_muted"], labelsize=8)
+    ax.grid(axis="y", color=COLORS["border"], linewidth=0.8, zorder=0)
+    for spine in ("top", "right"):
+        ax.spines[spine].set_visible(False)
+    ax.spines["left"].set_color(COLORS["border"])
+    ax.spines["bottom"].set_color(COLORS["border"])
+
+
+def trend_line_png(x_labels, series: list, width=8.5, height=3.4, show_legend=True, show_values=None) -> bytes:
+    """series: [{"label": str, "values": [float|None, ...], "color": "#hex" (opcional)}].
+    show_values: None = automático (rótulos só quando há 1-2 séries; com mais, os
+    números colidem entre linhas próximas, então mostramos só a grade + legenda)."""
+    if show_values is None:
+        show_values = len(series) <= 2
+    fig, ax = plt.subplots(figsize=(width, height))
+    _setup_trend_axes(ax, x_labels)
+    for i, s in enumerate(series):
+        color = s.get("color") or TREND_PALETTE[i % len(TREND_PALETTE)]
+        xs = [i for i, v in enumerate(s["values"]) if v is not None]
+        ys = [v for v in s["values"] if v is not None]
+        ax.plot(xs, ys, color=color, linewidth=2.2, marker="o", markersize=5, label=s["label"], zorder=3)
+        if show_values:
+            for x, y in zip(xs, ys):
+                ax.annotate(f"{y:.1f}", (x, y), textcoords="offset points", xytext=(0, 8), fontsize=7.5, color=color, ha="center", fontweight="bold")
+    if show_legend and len(series) > 1:
+        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=min(len(series), 5), fontsize=8.5, frameon=False)
+    fig.tight_layout()
+    return _fig_to_png_bytes(fig, dpi=260)
+
+
+def mini_trend_png(x_labels, values, color=None, classe=None, width=2.6, height=1.7) -> bytes:
+    """Mini gráfico de linha para cartões pequenos (grade por analista)."""
+    color = color or color_for_class(classe)
+    fig, ax = plt.subplots(figsize=(width, height))
+    n = len(x_labels)
+    ax.set_xlim(-0.35, n - 0.65)
+    ax.set_ylim(0, 105)
+    ax.set_yticks([0, 50, 100])
+    ax.tick_params(axis="y", colors=COLORS["text_muted"], labelsize=6.5)
+    ax.set_xticks(range(n))
+    ax.set_xticklabels(x_labels, fontsize=6, color=COLORS["text_muted"], rotation=30, ha="right")
+    ax.grid(axis="y", color=COLORS["border"], linewidth=0.6, zorder=0)
+    for spine in ("top", "right"):
+        ax.spines[spine].set_visible(False)
+    ax.spines["left"].set_color(COLORS["border"])
+    ax.spines["bottom"].set_color(COLORS["border"])
+    xs = [i for i, v in enumerate(values) if v is not None]
+    ys = [v for v in values if v is not None]
+    ax.plot(xs, ys, color=color, linewidth=1.8, marker="o", markersize=3.5, zorder=3)
+    for x, y in zip(xs, ys):
+        ax.annotate(f"{y:.0f}", (x, y), textcoords="offset points", xytext=(0, 5), fontsize=6, color=color, ha="center", fontweight="bold")
+    fig.tight_layout()
+    return _fig_to_png_bytes(fig, dpi=240)
