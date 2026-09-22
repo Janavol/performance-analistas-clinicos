@@ -106,8 +106,8 @@ def _radar_axes_labels_align(angle):
 
 
 def _new_radar_ax(ax):
-    ax.set_xlim(-1.62, 1.62)
-    ax.set_ylim(-1.5, 1.5)
+    ax.set_xlim(-2.05, 2.05)
+    ax.set_ylim(-1.85, 1.85)
     ax.set_aspect("equal")
     ax.axis("off")
 
@@ -124,8 +124,8 @@ def _draw_radar_grid(ax, angles):
 
 def _draw_radar_axis_labels(ax, angles, fontsize=8.5):
     for a, (_, label) in zip(angles, RADAR_AXES):
-        x, y = math.cos(a) * 1.30, math.sin(a) * 1.30
-        ax.text(x, y, label, fontsize=fontsize, color=COLORS["text_muted"], ha=_radar_axes_labels_align(a), va="center")
+        x, y = math.cos(a) * 1.62, math.sin(a) * 1.62
+        ax.text(x, y, label, fontsize=fontsize, color=COLORS["text_muted"], ha=_radar_axes_labels_align(a), va="center", zorder=5)
 
 
 def _draw_radar_shape(ax, angles, scores, color, linewidth=1.8, linestyle="-", fill_alpha=0.28, show_values=True, value_fontsize=8):
@@ -141,7 +141,8 @@ def _draw_radar_shape(ax, angles, scores, color, linewidth=1.8, linestyle="-", f
             val = scores.get(k)
             if val is None:
                 continue
-            vx, vy = math.cos(a) * (f + 0.16), math.sin(a) * (f + 0.16)
+            value_r = min(f + 0.13, 1.22)
+            vx, vy = math.cos(a) * value_r, math.sin(a) * value_r
             ax.text(
                 vx, vy, f"{val:.1f}", fontsize=value_fontsize, fontweight="bold", color=color,
                 ha=_radar_axes_labels_align(a), va="center", zorder=4,

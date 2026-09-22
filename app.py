@@ -65,6 +65,26 @@ st.markdown(
     .tile .t-value { font-family:'Fraunces', serif; font-size:28px; font-weight:600; color:#1E1B15; font-variant-numeric: tabular-nums; line-height:1.2; }
     .tile .t-sub { margin-top:6px; }
     .section-caption { color:#726B58; font-size:13px; margin:4px 0 10px; }
+    .insight-box p { margin:0; font-size:13px; line-height:1.55; color:#1E1B15; }
+    .analyst-card {
+        background:#FFFFFF; border:1px solid #DFD8C8; border-radius:14px; padding:20px;
+        box-shadow: 0 1px 2px rgba(30,27,21,0.06), 0 8px 24px -12px rgba(30,27,21,0.18);
+    }
+    .analyst-header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+    .analyst-header h3 { font-family:'Fraunces', serif !important; font-size:19px; font-weight:600; margin:0; color:#1E1B15; }
+    .analyst-header .analyst-score { font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:600; color:#726B58; display:flex; align-items:center; gap:8px; }
+    .tiles-mini { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin-bottom:18px; }
+    .tile-mini { background:#F0ECE1; border:1px solid #DFD8C8; border-radius:9px; padding:9px 11px; }
+    .tile-mini .tm-label { font-size:10px; color:#726B58; text-transform:uppercase; letter-spacing:.05em; font-weight:600; margin-bottom:3px; }
+    .tile-mini .tm-value { font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:600; color:#1E1B15; }
+    .analyst-charts { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
+    .analyst-chart-col {
+        border:1px solid #DFD8C8; border-radius:10px; padding:14px; background:#F0ECE1;
+        display:flex; flex-direction:column; align-items:center;
+    }
+    .analyst-chart-col .chart-label { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#726B58; font-weight:600; margin-bottom:10px; align-self:flex-start; }
+    .analyst-chart-col img { max-width:100%; height:auto; display:block; margin:0 auto; }
+    @media (max-width: 640px) { .analyst-charts { grid-template-columns:1fr; } }
     </style>
     """,
     unsafe_allow_html=True,
@@ -107,6 +127,60 @@ def radar_card_html(item: dict) -> str:
         f'<div class="radar-card-header"><span>{item["name"]}</span><span class="radar-card-score">{score_txt}</span></div>'
         f'<img src="data:image/png;base64,{b64}" style="width:100%;max-width:170px;height:auto;display:block;margin:0 auto;">'
         f'<div style="margin-top:6px;">{pill}</div>'
+        "</div>"
+    )
+
+
+def analyst_card_html(a: dict, t: dict) -> str:
+    """Cartão completo de análise por analista — cabeçalho, mini-tiles, dois
+    gráficos comparativos e o insight, tudo num único bloco HTML (mesma razão
+    do radar_card_html: nesting real só funciona dentro de um markdown só)."""
+
+    def pct(v):
+        return f"{v*100:.1f}%" if v is not None else "—"
+
+    def sc(v):
+        return f"{v:.1f}" if v is not None else "—"
+
+    stats = [
+        ("RC Total", str(a["rc_total"])),
+        ("RC Notificados", pct(a["rc_notif_pct"])),
+        ("RC no Prazo", pct(a["rc_prazo_pct"])),
+        ("PA no Prazo", pct(a["pa"]["pct"])),
+        ("UI no Prazo", pct(a["ui"]["pct"])),
+        ("UTI no Prazo", pct(a["uti"]["pct"])),
+        ("Sc. Protocolos", sc(a["score_protocolos"])),
+        ("Score Final", sc(a["score_final"])),
+    ]
+    mini_tiles = "".join(
+        f'<div class="tile-mini"><div class="tm-label">{label}</div><div class="tm-value">{value}</div></div>'
+        for label, value in stats
+    )
+
+    bar_png = charts.bar_chart_png(
+        [
+            {"label": "Equipe", "value": t["score_final"], "classe": t["classe"]},
+            {"label": a["analista"], "value": a["score_final"], "classe": a["classe"]},
+        ],
+        width=4.6, height=1.7,
+    )
+    radar_png = charts.radar_compare_png(a, a["classe"], t, size=2.7)
+    score_txt = sc(a["score_final"])
+    pill = pill_html(a["classe"])
+    insight = build_insight(a, t)
+
+    return (
+        '<div class="analyst-card">'
+        f'<div class="analyst-header"><h3>{a["analista"]}</h3>'
+        f'<span class="analyst-score">{score_txt} {pill}</span></div>'
+        f'<div class="tiles-mini">{mini_tiles}</div>'
+        '<div class="analyst-charts">'
+        f'<div class="analyst-chart-col"><div class="chart-label">Score final vs. Equipe</div>'
+        f'<img src="data:image/png;base64,{_img_b64(bar_png)}"></div>'
+        f'<div class="analyst-chart-col"><div class="chart-label">Perfil por bloco vs. Equipe</div>'
+        f'<img src="data:image/png;base64,{_img_b64(radar_png)}"></div>'
+        "</div>"
+        f'<div class="insight-box"><div class="insight-title">Insight automático</div><p>{insight}</p></div>'
         "</div>"
     )
 
@@ -287,40 +361,8 @@ else:
         st.subheader("Análise por analista")
         st.caption("Resumo individual, comparação com a equipe e insight automático — a mesma análise que sai em página própria no PDF.")
         for a in result["per_analyst"]:
-            header = f"**{a['analista']}** — score final {a['score_final']:.1f}" if a["score_final"] is not None else f"**{a['analista']}**"
-            with st.expander(header, expanded=False):
-                st.markdown(pill_html(a["classe"]), unsafe_allow_html=True)
-                mcols = st.columns(4)
-                mcols[0].metric("RC Total", a["rc_total"])
-                mcols[1].metric("RC Notificados", f"{a['rc_notif_pct']*100:.1f}%" if a["rc_notif_pct"] is not None else "—")
-                mcols[2].metric("RC no Prazo", f"{a['rc_prazo_pct']*100:.1f}%" if a["rc_prazo_pct"] is not None else "—")
-                mcols[3].metric("Score Final", f"{a['score_final']:.1f}" if a["score_final"] is not None else "—")
-                mcols2 = st.columns(4)
-                mcols2[0].metric("PA no Prazo", f"{a['pa']['pct']*100:.1f}%" if a["pa"]["pct"] is not None else "—")
-                mcols2[1].metric("UI no Prazo", f"{a['ui']['pct']*100:.1f}%" if a["ui"]["pct"] is not None else "—")
-                mcols2[2].metric("UTI no Prazo", f"{a['uti']['pct']*100:.1f}%" if a["uti"]["pct"] is not None else "—")
-                mcols2[3].metric("Sc. Protocolos", f"{a['score_protocolos']:.1f}" if a["score_protocolos"] is not None else "—")
-
-                ccol1, ccol2 = st.columns(2)
-                with ccol1:
-                    st.caption("Score final vs. Equipe")
-                    bar_png = charts.bar_chart_png(
-                        [
-                            {"label": "Equipe", "value": t["score_final"], "classe": t["classe"]},
-                            {"label": a["analista"], "value": a["score_final"], "classe": a["classe"]},
-                        ],
-                        width=4.2, height=1.5,
-                    )
-                    st.image(bar_png, width=360)
-                with ccol2:
-                    st.caption("Perfil por bloco vs. Equipe")
-                    st.image(charts.radar_compare_png(a, a["classe"], t, size=2.5), width=300)
-
-                st.markdown(
-                    f'<div class="insight-box"><div class="insight-title">Insight automático</div>'
-                    f'<div>{build_insight(a, t)}</div></div>',
-                    unsafe_allow_html=True,
-                )
+            with st.expander(f"**{a['analista']}**" + (f" — score final {a['score_final']:.1f}" if a["score_final"] is not None else ""), expanded=False):
+                st.markdown(analyst_card_html(a, t), unsafe_allow_html=True)
 
         st.divider()
 
