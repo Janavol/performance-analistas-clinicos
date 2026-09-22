@@ -32,8 +32,15 @@ st.markdown(
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
     .stApp { background-color: #F6F4EE; }
-    h1, h2, h3 { color: #1E1B15; font-family: 'Fraunces', Georgia, serif; }
-    h1 { font-weight: 600; }
+    h1, h2, h3,
+    .stApp h1, .stApp h2, .stApp h3,
+    [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stMarkdownContainer"] h3 {
+        color: #1E1B15 !important;
+        font-family: 'Fraunces', Georgia, serif !important;
+    }
+    [data-testid="stMarkdownContainer"] h1 { font-weight: 600 !important; }
     .eyebrow { font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:#0B6E5C; font-weight:600; margin-bottom:2px; }
     .lede { color: #726B58; font-size: 15px; max-width: 76ch; }
     .pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; font-family:'IBM Plex Mono', monospace; }
@@ -253,9 +260,7 @@ else:
             {"label": a["analista"], "value": a["score_final"], "classe": a["classe"]} for a in rankable
         ]
         if len(bar_entries) > 1:
-            bar_col, _ = st.columns([2, 1])
-            with bar_col:
-                st.image(charts.bar_chart_png(bar_entries, width=6.4), width=620)
+            st.image(charts.bar_chart_png(bar_entries, width=14), use_container_width=True)
         else:
             st.caption("Nenhum analista com dados suficientes para gerar score.")
 
