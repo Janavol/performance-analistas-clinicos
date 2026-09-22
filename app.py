@@ -38,6 +38,11 @@ st.markdown(
     .pill-Crítico { background:#FAE7E3; color:#D03B3B; }
     .insight-box { background:#E3F1EC; border-left:3px solid #0B6E5C; border-radius:0 10px 10px 0; padding:12px 16px; margin-top:8px; }
     .insight-title { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#0B6E5C; font-weight:700; margin-bottom:4px; }
+    .radar-card { background:#F0ECE1; border:1px solid #DFD8C8; border-radius:12px; padding:10px 8px 12px; text-align:center; margin-bottom:8px; }
+    .radar-card-header { display:flex; align-items:baseline; justify-content:center; gap:6px; font-size:12.5px; font-weight:700; color:#1E1B15; margin-bottom:2px; }
+    .radar-card-score { font-family:monospace; font-size:11.5px; font-weight:600; color:#726B58; }
+    .radar-card img { display:block; margin:0 auto; }
+    div[data-testid="stImage"] { display:flex; justify-content:center; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -50,6 +55,29 @@ def pill_html(classe: str | None) -> str:
     if not classe:
         return ""
     return f'<span class="pill {CLASS_CSS.get(classe, "")}">{classe}</span>'
+
+
+def _img_b64(png_bytes: bytes) -> str:
+    import base64
+
+    return base64.b64encode(png_bytes).decode("ascii")
+
+
+def radar_card_html(item: dict) -> str:
+    """Cartão de radar auto-contido (cabeçalho + imagem base64 + pill) num único bloco HTML,
+    para que a borda do cartão realmente envolva a imagem (st.markdown + st.image separados
+    não se aninham como elementos-pai/filho no DOM do Streamlit)."""
+    png = charts.radar_chart_png(item["scores"], item["classe"], size=1.9)
+    b64 = _img_b64(png)
+    score_txt = f"{item['score_final']:.1f}" if item.get("score_final") is not None else "—"
+    pill = pill_html(item["classe"]) if item.get("classe") else '<span style="font-size:11px;color:#9a9282;">sem dados</span>'
+    return (
+        '<div class="radar-card">'
+        f'<div class="radar-card-header"><span>{item["name"]}</span><span class="radar-card-score">{score_txt}</span></div>'
+        f'<img src="data:image/png;base64,{b64}" style="width:100%;max-width:170px;height:auto;display:block;margin:0 auto;">'
+        f'<div style="margin-top:6px;">{pill}</div>'
+        "</div>"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -173,6 +201,15 @@ else:
         cols[4].metric("PA no prazo", f"{t['pa']['pct']*100:.1f}%" if t["pa"]["pct"] is not None else "—")
         cols[5].metric("UI no prazo", f"{t['ui']['pct']*100:.1f}%" if t["ui"]["pct"] is not None else "—")
 
+        # ---- block score tiles ----
+        st.caption("Score por bloco (equipe)")
+        bcols = st.columns(5)
+        bcols[0].metric("Score Críticos", f"{t['score_criticos']:.1f}" if t["score_criticos"] is not None else "—")
+        bcols[1].metric("Score Protocolos", f"{t['score_protocolos']:.1f}" if t["score_protocolos"] is not None else "—")
+        bcols[2].metric("Score PA", f"{t['score_pa']:.1f}" if t["score_pa"] is not None else "—")
+        bcols[3].metric("Score UI", f"{t['score_ui']:.1f}" if t["score_ui"] is not None else "—")
+        bcols[4].metric("Score UTI Adulto", f"{t['score_uca']:.1f}" if t["score_uca"] is not None else "—")
+
         st.divider()
 
         # ---- bar chart ----
@@ -182,20 +219,28 @@ else:
             {"label": a["analista"], "value": a["score_final"], "classe": a["classe"]} for a in rankable
         ]
         if len(bar_entries) > 1:
-            st.image(charts.bar_chart_png(bar_entries, width=10))
+            bar_col, _ = st.columns([2, 1])
+            with bar_col:
+                st.image(charts.bar_chart_png(bar_entries, width=6.4), width=620)
         else:
             st.caption("Nenhum analista com dados suficientes para gerar score.")
 
         st.divider()
 
-        # ---- radar grid ----
+        # ---- radar cards (mesmo estilo do artifact: cartão pequeno com borda + pill) ----
         st.subheader("Perfil por bloco — radar")
         st.caption("Cada eixo mostra o score (0–100, equivalente a % de cumprimento): Resultados críticos, Protocolos, Pronto atendimento, Unidades de Internação e UTI Adulto.")
         radar_items = [{"name": "Equipe", "scores": t, "classe": t["classe"], "score_final": t["score_final"]}] + [
             {"name": a["analista"], "scores": a, "classe": a["classe"], "score_final": a["score_final"]}
             for a in result["per_analyst"]
         ]
-        st.image(charts.radar_grid_png(radar_items, cols=min(4, len(radar_items))))
+        radar_cols_per_row = 5
+        for start in range(0, len(radar_items), radar_cols_per_row):
+            row_items = radar_items[start : start + radar_cols_per_row]
+            row_cols = st.columns(radar_cols_per_row)
+            for col, item in zip(row_cols, row_items):
+                with col:
+                    st.markdown(radar_card_html(item), unsafe_allow_html=True)
 
         st.divider()
 
@@ -225,12 +270,12 @@ else:
                             {"label": "Equipe", "value": t["score_final"], "classe": t["classe"]},
                             {"label": a["analista"], "value": a["score_final"], "classe": a["classe"]},
                         ],
-                        width=4.6, height=1.6,
+                        width=4.2, height=1.5,
                     )
-                    st.image(bar_png)
+                    st.image(bar_png, width=360)
                 with ccol2:
                     st.caption("Perfil por bloco vs. Equipe")
-                    st.image(charts.radar_compare_png(a, a["classe"], t, size=3.2))
+                    st.image(charts.radar_compare_png(a, a["classe"], t, size=2.5), width=300)
 
                 st.markdown(
                     f'<div class="insight-box"><div class="insight-title">Insight automático</div>'
