@@ -107,8 +107,8 @@ def tiles_row_html(tiles: list) -> str:
     return '<div class="tiles-row">' + "".join(tiles) + "</div>"
 
 
-def radar_card_html(item: dict, img_max_w: str = "170px") -> str:
-    png = charts.radar_chart_png(item["scores"], item["classe"], size=1.9)
+def radar_card_html(item: dict, img_max_w: str = "170px", chart_size: float = 1.9) -> str:
+    png = charts.radar_chart_png(item["scores"], item["classe"], size=chart_size)
     b64 = img_b64(png)
     score_txt = f"{item['score_final']:.1f}" if item.get("score_final") is not None else "—"
     pill = pill_html(item["classe"]) if item.get("classe") else '<span style="font-size:11px;color:#9a9282;">sem dados</span>'
@@ -121,8 +121,8 @@ def radar_card_html(item: dict, img_max_w: str = "170px") -> str:
     )
 
 
-def radar_grid_html(items: list) -> str:
-    return '<div class="radar-grid">' + "".join(radar_card_html(item) for item in items) + "</div>"
+def radar_grid_html(items: list, img_max_w: str = "170px", chart_size: float = 1.9) -> str:
+    return '<div class="radar-grid">' + "".join(radar_card_html(item, img_max_w, chart_size) for item in items) + "</div>"
 
 
 def delta_badge_html(delta) -> str:

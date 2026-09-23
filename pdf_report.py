@@ -102,7 +102,7 @@ def build_pdf(result: dict, config: dict, is_example: bool) -> bytes:
         {"name": a["analista"], "scores": a, "classe": a["classe"], "score_final": a["score_final"]}
         for a in result["per_analyst"]
     ]
-    chunk_size = 10  # 2 linhas de 5 cartões — cabe com folga numa página A4 paisagem
+    chunk_size = 15  # 3 linhas de 5 cartões — cartão um pouco menor que na tela para caber numa página só
     radar_chunks = [radar_items[i : i + chunk_size] for i in range(0, len(radar_items), chunk_size)]
     for idx, chunk in enumerate(radar_chunks):
         title = "Perfil por bloco — radar"
@@ -112,7 +112,7 @@ def build_pdf(result: dict, config: dict, is_example: bool) -> bytes:
             f"<h2>{title}</h2>"
             '<p class="section-caption">Cada eixo mostra o score (0–100, equivalente a % de cumprimento): '
             "Resultados críticos, Protocolos, Pronto atendimento, Unidades de Internação e UTI Adulto.</p>"
-            f"{components.radar_grid_html(chunk)}"
+            f"{components.radar_grid_html(chunk, img_max_w='140px', chart_size=1.4)}"
         )
 
     # ---- páginas por analista — o mesmo cartão da tela ----
