@@ -5,12 +5,15 @@ seção por página, em paisagem."""
 from __future__ import annotations
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from weasyprint import HTML
 
 import charts
 import components
 import temporal_engine as te
+
+BRASILIA_TZ = ZoneInfo("America/Sao_Paulo")
 
 PAGE_CSS = """
 @page { size: A4 landscape; margin: 0; }
@@ -55,7 +58,7 @@ def build_pdf(result: dict) -> bytes:
     pages = []
 
     # ---- página 1: cabeçalho + cartões ----
-    now = datetime.now().strftime("%d/%m/%Y às %H:%M")
+    now = datetime.now(BRASILIA_TZ).strftime("%d/%m/%Y às %H:%M")
     tiles = [
         components.tile_html("Períodos analisados", len(periods)),
         components.tile_html("Score inicial da equipe", sc(result["team_first"])),

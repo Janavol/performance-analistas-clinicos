@@ -8,11 +8,14 @@ de fato, uma "fotografia" de cada seção da página, uma por página, em paisag
 from __future__ import annotations
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from weasyprint import HTML
 
 import charts
 import components
+
+BRASILIA_TZ = ZoneInfo("America/Sao_Paulo")
 
 PAGE_CSS = """
 @page { size: A4 landscape; margin: 0; }
@@ -56,7 +59,7 @@ def build_pdf(result: dict, config: dict, is_example: bool) -> bytes:
     pages = []
 
     # ---- página 1: cabeçalho + cartões (igual ao topo da página) ----
-    now = datetime.now().strftime("%d/%m/%Y às %H:%M")
+    now = datetime.now(BRASILIA_TZ).strftime("%d/%m/%Y às %H:%M")
     gerado = f"Gerado em {now}" + ("  •  dados de exemplo" if is_example else "")
     main_tiles = [
         components.tile_html("Score final da equipe", sc(t["score_final"]), components.pill_html(t["classe"])),
