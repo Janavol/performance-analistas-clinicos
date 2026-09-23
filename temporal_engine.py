@@ -4,7 +4,15 @@ histórica, e calcula a evolução da equipe e de cada analista entre períodos.
 
 from __future__ import annotations
 
+import re
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 import pandas as pd
+
+from engine import _strip_accents
+
+BRASILIA_TZ = ZoneInfo("America/Sao_Paulo")
 
 PERIOD_COL = "Período"
 
@@ -158,3 +166,18 @@ def build_temporal_insight(result: dict) -> str:
         parts.append(f"Maior queda individual: {d['analista']} ({d['delta']:+.1f} pontos).")
 
     return " ".join(parts) if parts else "Sem variação relevante entre os períodos enviados."
+
+
+def filename_from_periods(periods: list[str]) -> str:
+    """A planilha "Performance" não carrega datas brutas (só os scores já
+    agregados), então aqui o "período" vem dos rótulos que a própria pessoa
+    deu a cada arquivo enviado — ex.: ["Maio","Junho","Julho"] -> "maio_junho_julho_2026"."""
+    parts = []
+    for p in periods:
+        slug = re.sub(r"[^a-z0-9]+", "_", _strip_accents(str(p)).lower()).strip("_")
+        if slug:
+            parts.append(slug)
+    joined = "_".join(parts) if parts else "periodos"
+    if not re.search(r"20\d{2}", joined):
+        joined += f"_{datetime.now(BRASILIA_TZ).year}"
+    return joined

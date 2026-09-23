@@ -84,8 +84,9 @@ def _render_upload_section(result):
 
     if result is not None:
         pdf_bytes = temporal_pdf.build_pdf(result)
+        period_label = te.filename_from_periods(result["periods"])
         st.download_button(
-            "⬇️ Baixar PDF", data=pdf_bytes, file_name="analise-temporal-analistas.pdf",
+            "⬇️ Baixar PDF", data=pdf_bytes, file_name=f"performancecumulativaac_{period_label}.pdf",
             mime="application/pdf", type="primary", use_container_width=True,
         )
 

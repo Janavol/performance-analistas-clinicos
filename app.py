@@ -270,10 +270,11 @@ def render_main_tab():
 
             # ---- downloads ----
             dl1, dl2 = st.columns(2)
+            period_label = engine.period_label_from_dates(filtered_df["hora_inicio"])
             excel_bytes = excel_export.build_excel(result, config)
             dl1.download_button(
                 "⬇️ Baixar Excel da análise", data=excel_bytes,
-                file_name="analise-performance-analistas.xlsx",
+                file_name=f"performanceac_{period_label}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True,
             )
@@ -281,7 +282,7 @@ def render_main_tab():
             pdf_bytes = pdf_report.build_pdf(result, config, is_example)
             dl2.download_button(
                 "⬇️ Baixar PDF da análise", data=pdf_bytes,
-                file_name="analise-performance-analistas.pdf", mime="application/pdf",
+                file_name=f"performanceac_{period_label}.pdf", mime="application/pdf",
                 type="primary", use_container_width=True,
             )
 

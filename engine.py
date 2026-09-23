@@ -324,3 +324,39 @@ def compute(df: pd.DataFrame, config: dict) -> dict:
         "warnings": meta["warnings"],
         "row_count": meta["row_count"],
     }
+
+
+# ---------------------------------------------------------------------------
+# Nome de arquivo a partir das datas reais dos pedidos analisados
+# ---------------------------------------------------------------------------
+
+import unicodedata
+
+MONTHS_PT = [
+    "janeiro", "fevereiro", "marco", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+]
+
+
+def _strip_accents(s: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+
+
+def period_label_from_dates(dates) -> str:
+    """A partir de uma série de datas (ex.: hora_inicio dos pedidos filtrados),
+    devolve algo como "julho_2026" ou "maio_junho_2026" — os meses (e o ano)
+    realmente presentes nos dados, não a data de hoje."""
+    parsed = pd.to_datetime(pd.Series(dates), errors="coerce").dropna()
+    if parsed.empty:
+        return "periodo"
+
+    year_months: dict[int, set[int]] = {}
+    for d in parsed:
+        year_months.setdefault(d.year, set()).add(d.month)
+
+    parts = []
+    for year in sorted(year_months):
+        months = sorted(year_months[year])
+        month_names = [MONTHS_PT[m - 1] for m in months]
+        parts.append("_".join(month_names) + f"_{year}")
+    return "_".join(parts)
